@@ -1,0 +1,119 @@
+import openai
+import torch
+import gradio as gr
+from transformers import BertTokenizer, BertForQuestionAnswering, BertForSequenceClassification, pipeline
+
+#Set up OpenAI API Key
+openai.api_key = "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"
+
+#Load pre-trained BERT models and tokenizer
+model_name_qa = "deepset/bert-base-cased-squad2"
+model_name_sa = "nlptown/bert-base-multilingual-uncased-sentiment"
+
+#Initialize tokenizer
+tokenizer = BertTokenizer.from_pretrained(model_name_qa)
+
+#Load Question Answering model
+model_qa = BertForQuestionAnswering.from_pretrained(model_name_qa)
+
+#Load Sentiment Analysis pipeline
+sentiment_analyzer = pipeline("sentiment-analysis", model=model_name_sa)
+
+
+#Function: Answer IT-related questions using OpenAI
+def chatbot_response(user_query):
+    """
+    Generates an IT support response using OpenAI's GPT model.
+    """
+    response = openai.ChatCompletion.create(
+        model="gpt-3.5-turbo",
+        messages=[{"role": "system", "content": "You are an IT support assistant."},
+                  {"role": "user", "content": user_query}],
+        max_tokens=150,
+        temperature=0.7
+    )
+    return response["choices"][0]["message"]["content"].strip()
+
+
+#Function: Answer a question using BERT (Question Answering)
+def answer_question(question, context):
+    """
+    Answers a question based on the given context using BERT Question Answering model.
+    """
+    inputs = tokenizer.encode_plus(question, context, return_tensors="pt")
+    input_ids = inputs["input_ids"]
+    token_type_ids = inputs["token_type_ids"]
+
+    with torch.no_grad():
+        outputs = model_qa(input_ids, token_type_ids=token_type_ids)
+        start_scores = outputs.start_logits
+        end_scores = outputs.end_logits
+
+    start_index = torch.argmax(start_scores)
+    end_index = torch.argmax(end_scores) + 1
+
+    answer = tokenizer.convert_tokens_to_string(
+        tokenizer.convert_ids_to_tokens(input_ids[0][start_index:end_index])
+    )
+    return answer
+
+
+#Function: Analyze sentiment of a user’s IT support issue
+def analyze_sentiment(text):
+    """
+    Analyzes the sentiment of the given text using BERT Sentiment Analysis model.
+    """
+    result = sentiment_analyzer(text)[0]
+    return f"Sentiment: {result['label']}, Confidence: {result['score']:.2f}"
+
+
+#Function: Run the chatbot as a web interface
+def launch_chatbot():
+    """
+    Creates a web-based IT support chatbot using Gradio.
+    """
+    iface = gr.Interface(
+        fn=chatbot_response,
+        inputs="text",
+        outputs="text",
+        title="IT Support Chatbot",
+        description="Ask any IT-related question, and the chatbot will assist you."
+    )
+    iface.launch(share=True)
+
+
+#Function: Run example queries for Question Answering and Sentiment Analysis
+def test_models():
+    """
+    Runs example test cases for Question Answering and Sentiment Analysis.
+    """
+    # Example IT-related context and question
+    context = (
+        "In Windows, the blue screen of death (BSOD) is an error screen displayed to indicate system conflicts or "
+        "critical errors. It usually requires a system reboot and can be caused by hardware issues, driver conflicts, "
+        "or software problems."
+    )
+    question = "What causes the blue screen of death in Windows?"
+    answer = answer_question(question, context)
+
+    print(f"Question: {question}")
+    print(f"Answer: {answer}\n")
+
+    # Example Sentiment Analysis text
+    text = "I'm frustrated because my computer keeps showing a blue screen error."
+    sentiment_result = analyze_sentiment(text)
+
+    print(f"Text: {text}")
+    print(f"{sentiment_result}")
+
+
+#Run the appropriate function
+if __name__ == "__main__":
+    # Uncomment one of the following lines based on what we want to run:
+
+    #test_models()  # Run sample question answering and sentiment analysis
+    launch_chatbot()  # Run the chatbot as a web interface
+
+
+#https://huggingface.co/docs/transformers/en/model_doc/bert
+# if we want to run the chatbot in a web UI, change the hashtag launch_chatbot into actual thing and then a webpage opens to run script
