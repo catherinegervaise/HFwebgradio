@@ -1,8 +1,8 @@
 import openai
 import gradio as gr
 
-# 🟢 Set up OpenAI API Key (replace with your actual key)
-openai.api_key = "your-api-key"
+#OpenAI API Key
+openai.api_key = "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"
 
 def greet(name):
     return "Hello " + name + "!!"
@@ -22,7 +22,7 @@ def chatbot_response(user_query):
     )
     return response["choices"][0]["message"]["content"].strip()
 
-# 🟢 Create Gradio Web Interface
+#Gradio Web Interface
 iface = gr.Interface(
     fn=chatbot_response,
     inputs="text",
@@ -31,6 +31,6 @@ iface = gr.Interface(
     description="Ask any IT-related question, and the chatbot will assist you."
 )
 
-# 🟢 Run the Chatbot
+#Run the Chatbot
 if __name__ == "__main__":
-    iface.launch()
+    iface.launch(share=True)
