@@ -112,7 +112,7 @@ if __name__ == "__main__":
     # Uncomment one of the following lines based on what we want to run:
 
     #test_models()  # Run sample question answering and sentiment analysis
-    launch_chatbot()  # Run the chatbot as a web interface
+    launch_chatbot(share=True)  # Run the chatbot as a web interface
 
 
 #https://huggingface.co/docs/transformers/en/model_doc/bert
